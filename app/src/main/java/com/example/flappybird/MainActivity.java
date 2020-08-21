@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity implements LifecycleObserver
         vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
 
         // setup mvc
-        model = new GameModel(vibrator);
+        model = new GameModel(vibrator, this);
         view = new GameView(this);
         controller = new GameController();
         model.setView(view);

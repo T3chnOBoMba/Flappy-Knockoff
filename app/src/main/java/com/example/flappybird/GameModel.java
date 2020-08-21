@@ -1,5 +1,7 @@
 package com.example.flappybird;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Vibrator;
 
 public class GameModel {
@@ -10,6 +12,10 @@ public class GameModel {
     public static final int BEFORE = 2;
     public static final int PAUSE = 3;
 
+    // SharedPreferences
+    public static final String SHARED_PREFS = "stats";
+    public static final String HIGH_SCORE = "high score";
+
     private int state;                 // tells whether the game is running or not
     private Player bird;               // the player object
     private GameView view;             // view where the game is drawn
@@ -17,12 +23,16 @@ public class GameModel {
     private PipeContainer pipes;       // container to store all prepared pipes
     private Vibrator v;
     boolean vibrateOn;                 // tells if the device should vibrate or not
+    Context context;
+    SharedPreferences sharedPref;      // handles data saved to storage
 
 
-    public GameModel(Vibrator vib){
+    public GameModel(Vibrator vib, Context c){
         state = BEFORE;
+        context = c;
+        sharedPref = context.getSharedPreferences(SHARED_PREFS, Context.MODE_PRIVATE);
         score = 0;
-        bestScore = 0;
+        loadData();
         view = null;
         //2.7 original gravity
         bird = new Player(200, 3, 55);
@@ -30,6 +40,25 @@ public class GameModel {
         v = vib;
         vibrateOn = true;
     }
+
+    /*
+    Used to retrieve previously saved stats
+     */
+    private void loadData() {
+        // retrieve best score, or assign 0 if it is not found
+        bestScore = sharedPref.getInt(HIGH_SCORE, 0);
+        // may have more stats added to this
+    }
+
+    /*
+    Updates the high score if it is broken, could be used to update more stats in the future
+     */
+    private void updateData(){
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putInt(HIGH_SCORE, bestScore);
+        editor.apply();
+    }
+
 
     public Player getBird(){return bird;}
 
@@ -77,7 +106,7 @@ public class GameModel {
      * Creates a Pipe object and puts it in the container
      * @param viewHeight height of the view the Pipe will be drawn on
      * @param viewWidth width of the view the Pipe will be drawn on
-     * @return
+     * @return the newly prepared Pipe ready to be put into the game
      */
     public Pipe preparePipe(float viewHeight, float viewWidth){
         // if the score is a multiple of 10, make the game faster
@@ -111,8 +140,10 @@ public class GameModel {
             v.vibrate(500);
         if(state != BEFORE) {
             state = OFF;
-            if (score > bestScore)
+            if (score > bestScore) {
                 bestScore = score;
+                updateData();
+            }
             pipes.setPipeSpeed(-10);
             updateView();
         }
